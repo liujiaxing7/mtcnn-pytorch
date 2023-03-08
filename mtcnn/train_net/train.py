@@ -1,5 +1,8 @@
+import math
+
 from matplotlib import pyplot as plt
 from torch import nn
+from torch.optim import lr_scheduler
 
 from mtcnn.core.image_reader import TrainImageReader
 import datetime
@@ -160,6 +163,9 @@ def train_rnet(model_store_path, end_epoch,imdb,
         torch.save(net.state_dict(), os.path.join(model_store_path,"rnet_epoch_%d.pt" % cur_epoch))
         torch.save(net, os.path.join(model_store_path,"rnet_epoch_model_%d.pkl" % cur_epoch))
 
+def one_cycle(y1=0.0, y2=1.0, steps=100):
+    # lambda function for sinusoidal ramp from y1 to y2
+    return lambda x: ((1 - math.cos(x * math.pi / steps)) / 2) * (y2 - y1) + y1
 
 def train_onet(model_store_path, end_epoch,imdb,
               batch_size,frequent=50,base_lr=0.01,use_cuda=True):
@@ -175,7 +181,10 @@ def train_onet(model_store_path, end_epoch,imdb,
     if use_cuda:
         net.cuda()
 
+    lf = one_cycle(1, 0.2, end_epoch)
     optimizer = torch.optim.Adam(net.parameters(), lr=base_lr)
+
+    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
     train_data = TrainImageReader(imdb,48,batch_size,shuffle=True)
 
@@ -213,6 +222,7 @@ def train_onet(model_store_path, end_epoch,imdb,
             all_loss = landmark_loss
             loss_epoch.append(all_loss.cpu().detach().numpy())
 
+
             if batch_idx%frequent==0:
                 # accuracy=compute_accuracy(cls_pred,gt_label)
 
@@ -221,18 +231,24 @@ def train_onet(model_store_path, end_epoch,imdb,
                 # show3 = box_offset_loss.data.cpu().numpy()
                 show4 = landmark_loss.data.cpu().numpy()
                 show5 = all_loss.data.cpu().numpy()
-
-                print("%s : Epoch: %d, Step: %d, landmark loss: %s, all_loss: %s, lr:%s "%(datetime.datetime.now(),cur_epoch,batch_idx, show4,show5,base_lr))
+                lr = [x['lr'] for x in optimizer.param_groups]
+                print("%s : Epoch: %d, Step: %d, landmark loss: %s, all_loss: %s, lr:%s "%(datetime.datetime.now(),cur_epoch,batch_idx, show4,show5,lr[0]))
 
             optimizer.zero_grad()
             all_loss.backward()
             optimizer.step()
+        scheduler.step()
+        lr = [x['lr'] for x in optimizer.param_groups]
         avg_loss_epoch = sum(loss_epoch)/len(loss_epoch)
         loss.append(avg_loss_epoch)
 
 
         writer.add_scalar('landmark loss',
                           avg_loss_epoch,
+                          cur_epoch )
+
+        writer.add_scalar('lr',
+                          lr,
                           cur_epoch )
 
         if cur_epoch % 10 == 0:
