@@ -28,7 +28,7 @@ def detect_one(model, image_path, device, output_dir):
     height = np.array(img_array).shape[0]
     #
     # img_bg = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img_array, (48, 48))
+    img = cv2.resize(img_array, (96, 96))
     img = image_tools.convert_image_to_tensor(img)
     img = torch.unsqueeze(img, 0)
 

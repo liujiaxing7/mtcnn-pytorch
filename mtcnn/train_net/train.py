@@ -9,6 +9,7 @@ import torch
 from torch.autograd import Variable
 import mtcnn.core.image_tools as image_tools
 import numpy as np
+from tensorboardX import SummaryWriter
 
 
 def compute_accuracy(prob_cls, gt_cls):
@@ -170,6 +171,7 @@ def train_onet(model_store_path, end_epoch,imdb,
     net = ONet(is_train=True)
     net.train()
     print(use_cuda)
+    writer = SummaryWriter(model_store_path)
     if use_cuda:
         net.cuda()
 
@@ -225,10 +227,17 @@ def train_onet(model_store_path, end_epoch,imdb,
             optimizer.zero_grad()
             all_loss.backward()
             optimizer.step()
-        loss.append(sum(loss_epoch)/len(loss_epoch))
+        avg_loss_epoch = sum(loss_epoch)/len(loss_epoch)
+        loss.append(avg_loss_epoch)
 
-        torch.save(net.state_dict(), os.path.join(model_store_path,"onet_epoch_%d.pt" % cur_epoch))
-        torch.save(net, os.path.join(model_store_path,"onet_epoch_model_%d.pkl" % cur_epoch))
+
+        writer.add_scalar('landmark loss',
+                          avg_loss_epoch,
+                          cur_epoch )
+
+        if cur_epoch % 10 == 0:
+            torch.save(net.state_dict(), os.path.join(model_store_path,"onet_epoch_%d.pt" % cur_epoch))
+            torch.save(net, os.path.join(model_store_path,"onet_epoch_model_%d.pkl" % cur_epoch))
     plt.figure()
     plt.plot(loss, 'b', label='landmark_loss')
     plt.ylabel('landmark_loss')

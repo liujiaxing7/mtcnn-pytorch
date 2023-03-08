@@ -180,7 +180,9 @@ class ONet(nn.Module):
             nn.Conv2d(64,128,kernel_size=2,stride=1), # conv4
             nn.PReLU() # prelu4
         )
-        self.conv5 = nn.Linear(128*2*2, 256)  # conv5
+        self.conv5 = nn.Linear(128*8*8, 256)  # conv5
+        # self.conv6 = nn.Linear(2048, 256)  # conv5
+
         self.prelu5 = nn.PReLU()  # prelu5
         # detection
         self.conv6_1 = nn.Linear(256, 1)
@@ -196,6 +198,9 @@ class ONet(nn.Module):
         x = self.pre_layer(x)
         x = x.view(x.size(0), -1)
         x = self.conv5(x)
+        # x = self.conv6(x)
+        # x = self.conv7(x)
+        # x = self.conv8(x)
         x = self.prelu5(x)
         # detection
         # det = torch.sigmoid(self.conv6_1(x))
