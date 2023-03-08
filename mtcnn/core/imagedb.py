@@ -117,7 +117,6 @@ class ImageDB(object):
                 if len(annotation[2:])==4:
                     bbox_target = annotation[2:6]
                     imdb_['bbox_target'] = np.array(bbox_target).astype(float)
-                a = annotation[2:]
                 if len(annotation[2:])==8:
                     landmark = annotation[2:]
                     imdb_['landmark_target'] = np.array(landmark).astype(float)

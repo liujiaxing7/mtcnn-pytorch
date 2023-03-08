@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 from torch import nn
 
 from mtcnn.core.image_reader import TrainImageReader
@@ -174,13 +175,13 @@ def train_onet(model_store_path, end_epoch,imdb,
 
     optimizer = torch.optim.Adam(net.parameters(), lr=base_lr)
 
-    train_data=TrainImageReader(imdb,48,batch_size,shuffle=True)
+    train_data = TrainImageReader(imdb,48,batch_size,shuffle=True)
 
-
+    loss = []
     for cur_epoch in range(1,end_epoch+1):
 
         train_data.reset()
-
+        loss_epoch=[]
         for batch_idx,(image,(gt_label,gt_bbox,gt_landmark))in enumerate(train_data):
             # print("batch id {0}".format(batch_idx))
             im_tensor = [ image_tools.convert_image_to_tensor(image[i,:,:,:]) for i in range(image.shape[0]) ]
@@ -205,9 +206,10 @@ def train_onet(model_store_path, end_epoch,imdb,
             # cls_loss = lossfn.cls_loss(gt_label,cls_pred)
             # box_offset_loss = lossfn.box_loss(gt_label,gt_bbox,box_offset_pred)
             landmark_loss = nn.MSELoss()(landmark_offset_pred,gt_landmark)
-            landmark_loss = lossfn.landmark_loss(gt_label,gt_landmark,landmark_offset_pred)
+            # landmark_loss = lossfn.landmark_loss(gt_label,gt_landmark,landmark_offset_pred)
 
-            all_loss = landmark_loss*1.5
+            all_loss = landmark_loss
+            loss_epoch.append(all_loss.cpu().detach().numpy())
 
             if batch_idx%frequent==0:
                 # accuracy=compute_accuracy(cls_pred,gt_label)
@@ -223,6 +225,13 @@ def train_onet(model_store_path, end_epoch,imdb,
             optimizer.zero_grad()
             all_loss.backward()
             optimizer.step()
+        loss.append(sum(loss_epoch)/len(loss_epoch))
 
         torch.save(net.state_dict(), os.path.join(model_store_path,"onet_epoch_%d.pt" % cur_epoch))
         torch.save(net, os.path.join(model_store_path,"onet_epoch_model_%d.pkl" % cur_epoch))
+    plt.figure()
+    plt.plot(loss, 'b', label='landmark_loss')
+    plt.ylabel('landmark_loss')
+    plt.xlabel('epoch')
+    plt.legend()
+    plt.savefig(os.path.join(model_store_path, "landmark_loss.jpg"))
