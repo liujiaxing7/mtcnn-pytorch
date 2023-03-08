@@ -119,8 +119,6 @@ class TestImageLoader:
         self.data=data['data']
 
 
-
-
 def get_minibatch(imdb):
 
     # im_size: 12, 24 or 48
@@ -132,6 +130,7 @@ def get_minibatch(imdb):
 
     for i in range(num_images):
         im = cv2.imread(imdb[i]['image'])
+        im = cv2.resize(im,(48,48))
         #im = Image.open(imdb[i]['image'])
 
         if imdb[i]['flipped']:

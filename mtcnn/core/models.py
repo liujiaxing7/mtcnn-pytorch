@@ -187,7 +187,7 @@ class ONet(nn.Module):
         # bounding box regression
         self.conv6_2 = nn.Linear(256, 4)
         # lanbmark localization
-        self.conv6_3 = nn.Linear(256, 10)
+        self.conv6_3 = nn.Linear(256, 8)
         # weight initiation weih xavier
         self.apply(weights_init)
 
@@ -198,13 +198,13 @@ class ONet(nn.Module):
         x = self.conv5(x)
         x = self.prelu5(x)
         # detection
-        det = torch.sigmoid(self.conv6_1(x))
-        box = self.conv6_2(x)
+        # det = torch.sigmoid(self.conv6_1(x))
+        # box = self.conv6_2(x)
         landmark = self.conv6_3(x)
         if self.is_train is True:
-            return det, box, landmark
+            return landmark
         #landmard = self.conv5_3(x)
-        return det, box, landmark
+        return landmark
 
 
 

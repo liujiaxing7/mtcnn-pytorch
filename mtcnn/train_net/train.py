@@ -1,3 +1,5 @@
+from torch import nn
+
 from mtcnn.core.image_reader import TrainImageReader
 import datetime
 import os
@@ -90,8 +92,6 @@ def train_pnet(model_store_path, end_epoch,imdb,
 
         torch.save(net.state_dict(), os.path.join(model_store_path,"pnet_epoch_%d.pt" % cur_epoch))
         torch.save(net, os.path.join(model_store_path,"pnet_epoch_model_%d.pkl" % cur_epoch))
-
-
 
 
 def train_rnet(model_store_path, end_epoch,imdb,
@@ -198,26 +198,27 @@ def train_onet(model_store_path, end_epoch,imdb,
                 gt_bbox = gt_bbox.cuda()
                 gt_landmark = gt_landmark.cuda()
 
-            cls_pred, box_offset_pred, landmark_offset_pred = net(im_tensor)
+            landmark_offset_pred = net(im_tensor)
 
             # all_loss, cls_loss, offset_loss = lossfn.loss(gt_label=label_y,gt_offset=bbox_y, pred_label=cls_pred, pred_offset=box_offset_pred)
 
-            cls_loss = lossfn.cls_loss(gt_label,cls_pred)
-            box_offset_loss = lossfn.box_loss(gt_label,gt_bbox,box_offset_pred)
+            # cls_loss = lossfn.cls_loss(gt_label,cls_pred)
+            # box_offset_loss = lossfn.box_loss(gt_label,gt_bbox,box_offset_pred)
+            landmark_loss = nn.MSELoss()(landmark_offset_pred,gt_landmark)
             landmark_loss = lossfn.landmark_loss(gt_label,gt_landmark,landmark_offset_pred)
 
-            all_loss = cls_loss*0.8+box_offset_loss*0.6+landmark_loss*1.5
+            all_loss = landmark_loss*1.5
 
             if batch_idx%frequent==0:
-                accuracy=compute_accuracy(cls_pred,gt_label)
+                # accuracy=compute_accuracy(cls_pred,gt_label)
 
-                show1 = accuracy.data.cpu().numpy()
-                show2 = cls_loss.data.cpu().numpy()
-                show3 = box_offset_loss.data.cpu().numpy()
+                # show1 = accuracy.data.cpu().numpy()
+                # show2 = cls_loss.data.cpu().numpy()
+                # show3 = box_offset_loss.data.cpu().numpy()
                 show4 = landmark_loss.data.cpu().numpy()
                 show5 = all_loss.data.cpu().numpy()
 
-                print("%s : Epoch: %d, Step: %d, accuracy: %s, det loss: %s, bbox loss: %s, landmark loss: %s, all_loss: %s, lr:%s "%(datetime.datetime.now(),cur_epoch,batch_idx, show1,show2,show3,show4,show5,base_lr))
+                print("%s : Epoch: %d, Step: %d, landmark loss: %s, all_loss: %s, lr:%s "%(datetime.datetime.now(),cur_epoch,batch_idx, show4,show5,base_lr))
 
             optimizer.zero_grad()
             all_loss.backward()
