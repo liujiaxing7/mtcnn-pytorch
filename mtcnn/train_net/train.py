@@ -189,7 +189,7 @@ def train_onet(model_store_path, end_epoch, imdb, imdb_val,
     train_data = TrainImageReader(imdb,48,batch_size,shuffle=True)
     val_data = TrainImageReader(imdb_val,48,batch_size,shuffle=True)
 
-    best_val_loss = 0
+    best_val_loss = 1000
     loss = []
     for cur_epoch in range(1,end_epoch+1):
 
@@ -286,7 +286,7 @@ def train_onet(model_store_path, end_epoch, imdb, imdb_val,
         print("%s : Epoch val: %d, landmark loss: %s" % (datetime.datetime.now(), cur_epoch, landmark_loss_valepcoh))
         print("----------------------------------------------------------")
 
-        if landmark_loss_valepcoh > best_val_loss:
+        if landmark_loss_valepcoh < best_val_loss:
             torch.save(net.state_dict(), os.path.join(model_store_path,"best.pt"))
             best_val_loss = landmark_loss_valepcoh
             # torch.save(net, os.path.join(model_store_path,"onet_epoch_model_%d.pkl" % cur_epoch))
