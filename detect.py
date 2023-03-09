@@ -28,7 +28,7 @@ def detect_one(model, image_path, device, output_dir):
     height = np.array(img_array).shape[0]
     #
     # img_bg = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img_array, (96, 96))
+    img = cv2.resize(img_array, (48, 48))
     img = image_tools.convert_image_to_tensor(img)
     img = torch.unsqueeze(img, 0)
 
@@ -40,6 +40,10 @@ def detect_one(model, image_path, device, output_dir):
         point_x = int(landmarks[p * 2] * width)
         point_y = int(landmarks[p * 2 + 1] * height)
         cv2.circle(img_array, (point_x, point_y), tl + 1, clors[p], -1)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     save_path = os.path.join(output_dir, os.path.split(image_path)[1])
     cv2.imwrite(save_path, img_array)
 
